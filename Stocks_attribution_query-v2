@@ -1,0 +1,223 @@
+
+******************Overall base*******************************
+select count(mobile_number),activation_date from analytics_db.stocks_base_17feb
+where remark = 'A/C opeded' 
+group by activation_date;
+
+******************External base*******************************
+SELECT COUNT(distinct a.mobile_number),b.Campaign,a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.appsflyer_data_post_feb_final b
+ON a.mobile_number = b.mobile_number
+WHERE b.Campaign IN ('AF_CC_Stocks_Dhani',
+'Adsplay_Stocks_Dhani',
+'Appnext_Stocks_Dhani',
+'Internal_UAC_3.0_Android_S_Registration 003')
+AND remark = 'A/C opeded'
+GROUP BY b.Campaign,a.activation_date;
+
+create table analytics_db.external_base_stocks as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.appsflyer_data_post_feb_final b
+ON a.mobile_number = b.mobile_number
+WHERE b.Campaign IN ('AF_CC_Stocks_Dhani',
+'Adsplay_Stocks_Dhani',
+'Appnext_Stocks_Dhani',
+'Internal_UAC_3.0_Android_S_Registration 003')
+AND remark = 'A/C opeded';
+
+
+
+
+******************Internal base 1*******************************
+****count for internal base 1*************
+
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.kyc_25k_40k b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.external_base_stocks);
+group by a.activation_date;
+
+
+create table analytics_db.internal_base1 AS
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.kyc_25k_40k b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.external_base_stocks);
+
+
+create table analytics_db.ext_internal_base1 as
+select mobile_number from analytics_db.external_base_stocks
+union 
+select mobile_number from analytics_db.internal_base1;
+
+
+******************Internal base 2*******************************
+****count for internal base 2************* 
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.40k_above_salary b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base1)
+group by a.activation_date;
+
+
+create table analytics_db.internal_base2 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.40k_above_salary b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base1);
+
+
+create table analytics_db.ext_internal_base2 as
+select mobile_number from analytics_db.ext_internal_base1
+union 
+select mobile_number from analytics_db.internal_base2;
+
+
+******************Internal base 3*******************************
+****count for internal base 3*************
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.Epharmacy b
+ON a.mobile_number = b.mobile
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base2)
+group by a.activation_date;
+
+
+create table analytics_db.internal_base3 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.Epharmacy b
+ON a.mobile_number = b.mobile
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base2);
+
+
+create table analytics_db.ext_internal_base3 as
+select mobile_number from analytics_db.ext_internal_base2
+union 
+select mobile_number from analytics_db.internal_base3;
+
+******************Internal base 4*******************************
+****count for internal base 4*************
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_dof_limit_gt_75k b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base3)
+group by a.activation_date;
+
+
+
+create table analytics_db.internal_base4 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_dof_limit_gt_75k b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base3);
+
+
+create table analytics_db.ext_internal_base4 as
+select mobile_number from analytics_db.internal_base4
+union 
+select mobile_number from analytics_db.ext_internal_base3;
+
+
+******************Internal base 5*******************************
+****count for internal base 5*************
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_mobile_bill b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base4)
+group by a.activation_date;
+
+
+
+create table analytics_db.internal_base5 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_mobile_bill b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base4);
+
+
+create table analytics_db.ext_internal_base5 as
+select mobile_number from analytics_db.ext_internal_base4
+union 
+select mobile_number from analytics_db.internal_base5;
+
+******************Internal base 6*******************************
+****count for internal base 6*************
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_electricity_gt_1000 b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base5)
+group by a.activation_date;
+
+
+
+create table analytics_db.internal_base6 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.stocks_electricity_gt_1000 b
+ON a.mobile_number = b.mobile_number
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base5);
+
+
+create table analytics_db.ext_internal_base6 as
+select mobile_number from analytics_db.internal_base6
+union 
+select mobile_number from analytics_db.ext_internal_base5;
+
+
+******************Internal base 7*******************************
+****count for internal base 7************* mobile number
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.dormant_base_17feb b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base6)
+group by a.activation_date;
+
+create table analytics_db.internal_base7 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.dormant_base_17feb b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base6);
+
+
+create table analytics_db.ext_internal_base7 as
+select mobile_number from analytics_db.ext_internal_base6
+union 
+select mobile_number from analytics_db.internal_base7;
+
+
+******************Internal base 8*******************************
+****count for internal base 8*************
+SELECT COUNT(distinct a.mobile_number),a.activation_date FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.dhani_employee_17feb b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base7)
+group by a.activation_date;
+ 
+
+create table analytics_db.internal_base8 as
+SELECT distinct a.mobile_number FROM analytics_db.stocks_base_17feb a
+JOIN analytics_db.dhani_employee_17feb b
+ON a.mobile_number = SUBSTRING(b.mobile_number,3,12)
+WHERE DATE(a.activation_date) BETWEEN '2022-02-01' AND '2022-02-17'
+and a.mobile_number NOT IN (SELECT mobile_number FROM analytics_db.ext_internal_base7);
+
+
+create table analytics_db.ext_internal_base8 as
+select mobile_number from analytics_db.ext_internal_base7
+union 
+select mobile_number from analytics_db.internal_base8;
+
+
